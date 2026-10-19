@@ -55,7 +55,6 @@ Source: "{#SourceDir}\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\NOTICE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\DISCLAIMER.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\engine\*"; DestDir: "{app}\engine"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#SourceDir}\modules\*"; DestDir: "{app}\modules"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#SourceDir}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "使用说明.txt"; DestDir: "{app}"; Flags: ignoreversion
 

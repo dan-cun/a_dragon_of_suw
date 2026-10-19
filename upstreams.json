@@ -9,13 +9,5 @@
     "url": "https://github.com/dan-cun/lepao3",
     "commit": "78357e4a5f05147c34b199869ee04379734260c9",
     "license": "vendor/lepao3/LICENSE"
-  },
-  "ocs-desktop": {
-    "metadata": "vendor/ocs/upstream.json",
-    "license": "licenses/ocs/NOTICE.md"
-  },
-  "pi-model-reference": {
-    "reference": "licenses/WOF_NAI_Studio/NOTICE.md",
-    "license": "licenses/WOF_NAI_Studio/LICENSE.txt"
   }
 }

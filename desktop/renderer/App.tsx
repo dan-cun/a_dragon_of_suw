@@ -3,7 +3,7 @@ import {
   ArrowRight, CalendarCheck, Check, CheckCircle2, ChevronRight,
   Clock3, ExternalLink, FolderOpen, History, LoaderCircle, LogOut,
   MapPin, RefreshCw, Settings2, ShieldCheck, Sparkles, UserRound, X,
-  AlertCircle, Power, CalendarDays, Activity, GraduationCap, MonitorPlay, Bot,
+  AlertCircle, Power, CalendarDays, Activity,
 } from 'lucide-react';
 import type { AppState, Outcome, Phase, Result, Settings, Task } from '../shared/contracts';
 import Heatmap from './Heatmap';
@@ -11,13 +11,10 @@ import LocationEditor from './LocationEditor';
 import SchedulePreferences from './SchedulePreferences';
 import { getShanghaiClock } from '../core/time';
 import Lepao from './Lepao';
-import CampusServices from './CampusServices';
-import Ocs from './Ocs';
-import Models from './Models';
 import { findSubmission } from '../core/submissions';
 import { editionLabel } from '../shared/edition';
 
-type View = 'academic' | 'ocs' | 'models' | 'today' | 'lepao' | 'heatmap' | 'history' | 'settings';
+type View = 'today' | 'lepao' | 'heatmap' | 'history' | 'settings';
 interface Notice { kind: 'success' | 'error'; message: string; code: string }
 
 const phases: Record<Phase, string> = {
@@ -29,9 +26,6 @@ const outcomes: Record<Outcome, string> = {
 };
 const navItems: { id: View; label: string; icon: typeof CalendarCheck }[] = [
   { id: 'today', label: '今日任务', icon: CalendarCheck },
-  { id: 'academic', label: '校园服务', icon: GraduationCap },
-  { id: 'ocs', label: 'OCS 网课', icon: MonitorPlay },
-  { id: 'models', label: 'Pi 助手', icon: Bot },
   { id: 'lepao', label: '乐跑', icon: Activity },
   { id: 'heatmap', label: '打卡热力', icon: CalendarDays },
   { id: 'history', label: '运行记录', icon: History },
@@ -244,7 +238,7 @@ function App() {
 
       <main className="main-area">
         <header className="page-header">
-          <div><div className="eyebrow">SWU CAMPUS ASSISTANT</div><h1>{currentNav?.label}</h1><p>{view === 'today' ? '保存签到坐标，选择任务并确认今天的签到结果。' : view === 'academic' ? '连接学校教务，在本机查看课表、成绩和考试安排。' : view === 'ocs' ? '管理源码集成 OCS、隔离浏览器与已提供的功能子集。' : view === 'models' ? '管理本机模型配置，使用原生 Pi 诊断会话与外部协作教程。' : view === 'lepao' ? '管理乐跑成员，检查本机环境，查看执行与复核结果。' : view === 'heatmap' ? '把本机签到记录放进日历，查看确认结果和每日详情。' : view === 'history' ? '查看每一次执行结果，以及完整的运行过程。' : '按你的节奏安排签到，设置会保存在这台设备。'}</p></div>
+          <div><div className="eyebrow">SWU CAMPUS ASSISTANT</div><h1>{currentNav?.label}</h1><p>{view === 'today' ? '保存签到坐标，选择任务并确认今天的签到结果。' : view === 'lepao' ? '管理乐跑成员，检查本机环境，查看执行与复核结果。' : view === 'heatmap' ? '把本机签到记录放进日历，查看确认结果和每日详情。' : view === 'history' ? '查看每一次执行结果，以及完整的运行过程。' : '按你的节奏安排签到，设置会保存在这台设备。'}</p></div>
           <div className={`phase-pill ${locked && !exited ? 'working' : ''}`} data-testid="phase-status" aria-live="polite">{locked && !exited ? <LoaderCircle size={15} className="spin" /> : <span className="status-dot" />}{exited ? '已退出' : state ? phases[state.phase] : '加载中'}{busy && state?.phase === 'idle' ? ' · 处理中' : ''}</div>
         </header>
 
@@ -252,9 +246,6 @@ function App() {
 
         {!state && <div className="panel loading-panel">{notice?.kind === 'error' ? <AlertCircle size={28} /> : <LoaderCircle size={28} className="spin" />}<h2>{notice?.kind === 'error' ? '应用状态读取失败' : '正在读取应用状态'}</h2><p>读取本机保存的账号状态、任务和偏好设置。</p>{notice?.kind === 'error' && <button className="button secondary" data-testid="reload-state" disabled={locked} onClick={() => void run(() => window.desktop.getState(), '应用状态已读取。')}><RefreshCw size={16} />重新读取</button>}</div>}
 
-        {state && view === 'academic' && <CampusServices account={state.profile?.username ?? null} locked={locked} />}
-        {state && view === 'ocs' && <Ocs />}
-        {state && view === 'models' && <Models />}
         {state && view === 'today' && <>
           <section className="overview-grid" aria-label="今日概况">
             <div className="stat-card"><span className="stat-icon green"><CalendarCheck size={20} /></span><div><span>待签到任务</span><strong>{pending.length}<small>项</small></strong></div></div>

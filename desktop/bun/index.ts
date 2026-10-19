@@ -15,14 +15,6 @@ import { authenticationSubmissionSchema } from './login-memory';
 import { instancePipeName } from './instance';
 import { assertCanShutdown } from '../core/shutdown';
 import { createLepaoService } from './lepao';
-import { createAcademicService } from './academic';
-import { createOcsService } from './ocs';
-import { createModelService } from './models';
-import { createPiService } from './pi-service';
-import { piServiceCommandSchema } from '../shared/pi';
-import { ocsCommandSchema } from '../shared/ocs';
-import { modelsCommandSchema } from '../shared/models';
-import { academicCommandSchema } from '../shared/academic';
 import { lepaoCommandSchema } from '../shared/lepao';
 import { DakaError } from '../core/errors';
 import { createStateStream } from './state-stream';
@@ -72,13 +64,7 @@ if (!ownsInstance) {
 
 if (!reused) {
   const lepao = createLepaoService(dataDirectory);
-  let academic: ReturnType<typeof createAcademicService> | null = null;
-  const application = await createApplication(dataDirectory, edgePath, () => lepao.isBusy() || academic?.isBusy() === true);
-  academic = createAcademicService(dataDirectory, edgePath, () => application.getState().profile?.username ?? null);
-  const campus = academic;
-  const ocs = createOcsService(dataDirectory);
-  const models = createModelService(dataDirectory);
-  const pi = createPiService(dataDirectory, models.privateConfiguration, ocs);
+  const application = await createApplication(dataDirectory, edgePath, () => lepao.isBusy());
   if (application.getState().settings.launchAtLogin) await setLaunchAtLogin(true);
   const launchKey = randomBytes(32).toString('hex');
   const sessionKey = randomBytes(32).toString('hex');
@@ -98,12 +84,8 @@ if (!reused) {
     if (closing) return;
     assertCanShutdown(application.getState().phase);
     lepao.assertCanClose();
-    campus.assertCanClose();
-    if (models.isBusy()) throw new Error('模型配置正在读写，请等待完成后退出。');
-    if (pi.isBusy()) throw new Error('Pi 诊断会话正在运行，请先停止会话或等待请求结束后退出。');
-    await ocs.assertCanClose();
     closing = true;
-    try { await ocs.close(); await pi.close(); await campus.close(); stopNotifications?.(); await application.close(); await lepao.close(); await notifications?.close(); }
+    try { stopNotifications?.(); await application.close(); await lepao.close(); await notifications?.close(); }
     catch (error) { closing = false; throw error; }
     setTimeout(() => {
       server.stop(true);
@@ -144,32 +126,23 @@ if (!reused) {
       }
       if (request.method !== 'POST' || request.headers.get('Origin') !== origin || request.headers.get('X-SWU-Request') !== '1'
         || request.headers.get('Content-Type') !== 'application/json') return json({ error: 'Invalid local application request.' }, 403);
-      const maximumBody = url.pathname === '/api/ocs' ? 2_097_152 : url.pathname === '/api/pi' ? 65_536 : 16_384;
-      if (Number(request.headers.get('Content-Length') ?? '0') > maximumBody) return json({ error: 'Request too large.' }, 413);
+      if (Number(request.headers.get('Content-Length') ?? '0') > 16_384) return json({ error: 'Request too large.' }, 413);
       try {
         const text = await request.text();
-        if (Buffer.byteLength(text) > maximumBody) return json({ error: 'Request too large.' }, 413);
+        if (text.length > 16_384) return json({ error: 'Request too large.' }, 413);
         const payload: unknown = JSON.parse(text);
         let value: object | null = null;
         switch (url.pathname) {
           case '/api/state': value = application.getState(); break;
-          case '/api/ocs': value = await ocs.execute(ocsCommandSchema.parse(payload)); break;
-          case '/api/models': value = await models.execute(modelsCommandSchema.parse(payload)); break;
-          case '/api/pi': value = await pi.execute(piServiceCommandSchema.parse(payload)); break;
-          case '/api/academic': {
-            const command = academicCommandSchema.parse(payload);
-            if (command.command !== 'state' && (application.getState().phase !== 'idle' || lepao.isBusy())) throw new Error('其他学校操作正在进行，请等待结束后再操作校园服务。');
-            value = await campus.execute(command); break;
-          }
           case '/api/lepao': {
             const command = lepaoCommandSchema.parse(payload);
-            if (!['state', 'stop'].includes(command.command) && (application.getState().phase !== 'idle' || campus.isBusy())) {
+            if (!['state', 'stop'].includes(command.command) && application.getState().phase !== 'idle') {
               throw new DakaError('OPERATION_BUSY', '查寝操作正在进行，请等待结束后再操作乐跑。', undefined);
             }
             value = await lepao.execute(command); break;
           }
           case '/api/login': value = await application.login(); break;
-          case '/api/logout': await campus.close(); value = await application.logout(); break;
+          case '/api/logout': value = await application.logout(); break;
           case '/api/forget-login': value = await application.forgetLogin(); break;
           case '/api/sync': value = await application.sync(); break;
           case '/api/location': value = await application.saveLocation(payload); break;

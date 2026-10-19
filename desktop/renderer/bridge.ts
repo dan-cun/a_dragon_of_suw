@@ -2,10 +2,6 @@ import type { AppState, CheckinLocation, DesktopBridge, Result, Settings } from 
 import { z } from 'zod';
 import { appStateSchema } from '../shared/validation';
 import { lepaoStateSchema } from '../shared/lepao';
-import { academicStateSchema } from '../shared/academic';
-import { ocsStateSchema } from '../shared/ocs';
-import { modelsStateSchema } from '../shared/models';
-import { piStateSchema } from '../shared/pi';
 
 async function request<T>(path: string, body: object, schema: z.ZodType<T>): Promise<Result<T>> {
   const response = await fetch(path, {
@@ -43,8 +39,4 @@ const bridge: DesktopBridge = {
   }
 };
 window.desktop = bridge;
-window.academic = { execute: command => request('/api/academic', command, academicStateSchema) };
-window.ocs = { execute: command => request('/api/ocs', command, ocsStateSchema) };
-window.models = { execute: command => request('/api/models', command, modelsStateSchema) };
-window.pi = { execute: command => request('/api/pi', command, piStateSchema) };
 window.lepao = { execute: command => request('/api/lepao', command, lepaoStateSchema) };
