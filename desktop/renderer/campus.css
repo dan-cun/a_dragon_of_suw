@@ -1,0 +1,37 @@
+.campus-services { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; gap:22px; }
+.academic-connection,.academic-content { padding:26px; border-radius:16px; box-shadow:0 1px 3px #11182705; }
+.academic-heading { display:flex; gap:14px; align-items:center; }
+.academic-heading h2,.academic-toolbar h2 { font-size:18px; letter-spacing:0; }
+.academic-heading p,.academic-toolbar p { color:var(--text-muted); margin-top:6px; font-size:13px; }
+.academic-icon { display:grid; place-items:center; width:46px; height:46px; border-radius:12px; background:var(--primary-soft); color:var(--primary); flex-shrink:0; }
+.academic-status { margin-left:auto; border:1px solid var(--border); border-radius:20px; padding:6px 10px; color:var(--text-muted); font-size:12px; white-space:nowrap; background:var(--bg); }
+.academic-status.connected { color:var(--success); border-color:var(--success-border); background:var(--success-soft); }
+.academic-message { margin:22px 0 18px; line-height:1.8; color:var(--text-secondary); }
+.academic-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.academic-actions .button,.academic-filters .button { min-height:38px; border-radius:8px; padding:9px 14px; font-size:13px; }
+.academic-help { border-top:1px solid var(--border); margin-top:22px; padding-top:16px; color:var(--text-muted); font-size:13px; line-height:1.9; }
+.academic-help summary { cursor:pointer; color:var(--text-secondary); }
+.academic-help ol { padding-left:22px; }
+.academic-help li { margin:7px 0; }
+.academic-error { margin-top:16px; padding:14px; border-radius:8px; border:1px solid var(--danger-border); background:var(--danger-soft); color:var(--danger); line-height:1.7; overflow-wrap:anywhere; }
+.academic-tabs { display:flex; gap:4px; padding:4px; background:var(--surface-subtle); border-radius:10px; width:fit-content; margin-bottom:26px; }
+.academic-tabs button { display:flex; gap:8px; align-items:center; border:0; background:transparent; color:var(--text-muted); padding:10px 20px; border-radius:7px; font:inherit; font-size:13px; }
+.academic-tabs button.selected { color:var(--text); background:var(--surface); box-shadow:0 1px 3px #11182712; font-weight:600; }
+.academic-toolbar { display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+.academic-filters { display:flex; gap:10px; flex-wrap:wrap; }
+.academic-filters select,.academic-result-meta input { font:inherit; font-size:13px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text); min-height:38px; padding:8px 12px; max-width:100%; }
+.academic-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:65px 15px; color:var(--text-muted); }
+.academic-empty h3 { color:var(--text-secondary); font-size:15px; font-weight:500; }
+.academic-empty p { font-size:13px; line-height:1.8; }
+.academic-result-meta { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin:26px 0 16px; color:var(--text-muted); font-size:12px; }
+.academic-table-scroll { overflow:auto; border:1px solid var(--border); border-radius:10px; }
+.academic-table { width:100%; border-collapse:collapse; min-width:640px; font-size:13px; text-align:left; }
+.academic-table th { background:var(--bg); color:var(--text-muted); font-weight:500; padding:13px 14px; border-bottom:1px solid var(--border); white-space:nowrap; }
+.academic-table td { padding:17px 14px; border-bottom:1px solid var(--border); max-width:280px; line-height:1.7; overflow-wrap:anywhere; }
+.academic-table tr:last-child td { border-bottom:0; }
+.academic-table strong { font-weight:600; }
+.academic-table small { display:block; color:var(--text-muted); margin-top:4px; font-size:12px; }
+.academic-score { font-size:17px; font-weight:600; }
+.academic-no-match { padding:24px; text-align:center; color:var(--text-muted); }
+.academic-source { color:var(--text-muted); margin-top:20px; font-size:12px; line-height:1.8; }
+@media(max-width:1000px) { .academic-connection,.academic-content { padding:20px; } .academic-toolbar { align-items:flex-start; } }

@@ -1,0 +1,4 @@
+pycryptodome>=3.19
+mitmproxy>=11
+ddddocr>=1.5
+pyinstaller>=6

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data:; connect-src 'self'; form-action 'none'; base-uri 'none'">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>校园账号登录</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <div class="mark" aria-hidden="true">S</div>
+    <h1>登录校园账号</h1>
+    <p class="intro">验证码会自动识别并填入，可修改后再登录。可选择加密保存登录信息。</p>
+    <p id="status" role="status" aria-live="polite">正在连接学校认证服务…</p>
+    <form id="login-form">
+      <label for="username">校园账号</label>
+      <input id="username" name="username" autocomplete="username" maxlength="128" required disabled>
+      <label for="password">校园密码</label>
+      <input id="password" name="password" type="password" autocomplete="off" maxlength="512" required disabled>
+      <label class="option" id="saved-option" hidden><input id="use-saved" type="checkbox">使用已保存的密码</label>
+      <label for="captcha">验证码</label>
+      <div class="captcha-row">
+        <input id="captcha" name="captcha" autocomplete="off" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required disabled>
+        <img id="captcha-image" alt="学校验证码" width="110" height="42" hidden>
+        <button id="refresh" type="button" disabled>换一张</button>
+      </div>
+      <label class="option"><input id="remember-login" type="checkbox">记住登录，认证失效后尝试自动恢复</label>
+      <p class="note">勾选后，账号密码和学校会话会用 Windows 加密保存在本机。验证码会自动识别并填入，可修改；退出账号会删除保存的信息。</p>
+      <button id="submit" class="primary" type="submit" disabled>登录</button>
+      <button id="cancel" type="button">取消</button>
+    </form>
+    <p class="note">账号与验证码直接提交给学校。认证失败后，请从主界面重新打开登录。</p>
+  </main>
+  <script src="bridge.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>

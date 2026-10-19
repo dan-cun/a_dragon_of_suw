@@ -1,0 +1,21 @@
+{
+  "swu-daka": {
+    "url": "https://github.com/dan-cun/swu-daka",
+    "commit": "42d8973559841f75d98f019c9a8c97204c680d4c",
+    "desktopBaseVersion": "2.4.2",
+    "license": "licenses/swu-daka/LICENSE"
+  },
+  "lepao3": {
+    "url": "https://github.com/dan-cun/lepao3",
+    "commit": "78357e4a5f05147c34b199869ee04379734260c9",
+    "license": "vendor/lepao3/LICENSE"
+  },
+  "ocs-desktop": {
+    "metadata": "vendor/ocs/upstream.json",
+    "license": "licenses/ocs/NOTICE.md"
+  },
+  "pi-model-reference": {
+    "reference": "licenses/WOF_NAI_Studio/NOTICE.md",
+    "license": "licenses/WOF_NAI_Studio/LICENSE.txt"
+  }
+}
