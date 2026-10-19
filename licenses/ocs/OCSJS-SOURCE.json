@@ -1,0 +1,13 @@
+{
+  "component": "OCS userscript source",
+  "repository": "https://github.com/ocsjs/ocsjs",
+  "tag": "5.2.1",
+  "commit": "8b25a3f44523a0d4b7373878488056f4aa478cf6",
+  "sourceManifestPath": "vendor/ocs/userscript-source-manifest.json",
+  "upstreamLicensePath": "vendor/ocs/userscript-source/LICENSE",
+  "preservedLicensePath": "licenses/ocs/OCSJS-LICENSE",
+  "copyright": "Copyright (c) 2022 enncy",
+  "scope": "OCS upstream source only. No ScriptCat, easy-us dependency implementation, CDN bundle, extension package, profile or account data is imported by this source pin.",
+  "integrationStatus": "Source baseline only; no course execution or runtime integration is claimed.",
+  "dependencyBoundary": "Upstream dependency declarations are preserved as original source. Their licenses and runtime integration require separate review; missing easy-us license text does not prohibit copying the MIT-licensed OCS source."
+}

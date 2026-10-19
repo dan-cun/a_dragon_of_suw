@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "component": "OCS userscript",
+  "repository": "https://github.com/ocsjs/ocsjs",
+  "tag": "5.2.1",
+  "commit": "8b25a3f44523a0d4b7373878488056f4aa478cf6",
+  "sourceRoot": "vendor/ocs/ocsjs-5.2.1",
+  "sourceManifestPath": "vendor/ocs/ocsjs-source-manifest.json",
+  "licensePath": "licenses/ocs/OCSJS-5.2.1-LICENSE",
+  "copyright": "Copyright (c) 2022 enncy",
+  "scope": "The preserved MIT text belongs to OCS userscript source only; it does not license OCS Desktop, easy-us, ScriptCat or Tampermonkey.",
+  "purpose": "Byte-exact source baseline for selective porting, not an enabled course runtime.",
+  "runtimeDependenciesImported": false,
+  "cdnBundlesImported": false,
+  "note": "Original dependency declarations and upstream comments remain unchanged. Runtime dependencies require their own license review; missing easy-us license text does not prohibit copying this MIT-licensed OCS source."
+}

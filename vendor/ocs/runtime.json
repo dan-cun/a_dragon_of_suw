@@ -1,0 +1,11 @@
+{
+  "version": "2.12.0",
+  "files": {
+    "OCS Desktop.exe": "577426db06470dd349a66fffd2bde0bb1f8ff16f29229a224c5712c70d9eefaa",
+    "resources/app/lib/index.js": "e0ae405ebe354fc218219fee2fe100e5166e46179cb17bb22052c8e0af9ef25b",
+    "resources/app/lib/src/tasks/startup.server.js": "8c87d3ef06fbd2ae0d945d5afe010ada62010f8f83a5105f5d5a63f964bfe3d4",
+    "resources/app/lib/src/tasks/updater.js": "777a2d4a97d89ff6d4cff4f489c023aff5cf016efe10b9c3d1fa278765c885ab",
+    "resources/app/package.json": "852936a749664faff7d177158266ff6b2d6fb614c2d336801d8679923677ea37",
+    "resources/app/lib/swu-host.cjs": "2c25ddee9c38b6d61857b49cce1e849b819439666fef0f0ce5e7cd602a01938b"
+  }
+}

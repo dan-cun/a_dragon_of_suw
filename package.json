@@ -1,7 +1,7 @@
 {
   "name": "swu-campus-assistant",
-  "version": "1.0.0-alpha",
-  "edition": "basic",
+  "version": "1.0.0-beta",
+  "edition": "academic",
   "description": "西大日常 · 查寝与乐跑整合版，基于 dan-cun/swu-daka 和 dan-cun/lepao3",
   "author": "swu-daka contributors (original author: dan-cun)",
   "private": true,
@@ -13,16 +13,21 @@
     "build:engine": "bun scripts/build-engine.ts",
     "build:installer": "bun scripts/build-installer.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test ./tests/core.test.ts ./tests/scheduler.test.ts ./tests/native.test.ts ./tests/service.test.ts ./tests/submissions.test.ts ./tests/notifications.test.ts",
+    "test": "bun test ./tests/core.test.ts ./tests/scheduler.test.ts ./tests/native.test.ts ./tests/service.test.ts ./tests/submissions.test.ts ./tests/notifications.test.ts ./tests/modules.test.ts",
     "test:desktop": "playwright test",
+    "test:ocs": "bun test ./tests/ocs-integration.test.ts",
     "check": "bun run typecheck && bun run test && bun run build && bun run test:desktop && bun run build:installer",
     "start": "bun desktop/bun/launch.ts"
   },
   "dependencies": {
+    "@earendil-works/pi-agent-core": "1.3.0",
+    "@earendil-works/pi-ai": "1.3.0",
     "lucide-react": "1.49.0",
+    "playwright-core": "1.63.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "tough-cookie": "6.0.2",
+    "typebox": "1.3.27",
     "zod": "4.6.5"
   },
   "devDependencies": {

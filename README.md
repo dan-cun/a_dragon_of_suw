@@ -6,15 +6,17 @@
 
 修改者：本地项目维护者。修改日期：2026-10-17。修改范围：在查寝桌面版 2.4.2 上增加乐跑页面、独立引擎通信、统一安装，收紧代理进程管理，关闭默认微信强制退出，增加任务级防重、有限只读回查、托盘提醒和乐跑本地数据清理。原作者不负责本整合版技术支持或背书，问题请反馈给本地项目维护者。
 
-本项目保留 **1.0.0-alpha（基础版）** 与 **1.0.0-beta（含教务版）** 两个分支起点，原 3.x 为整合开发阶段编号。当前版本 **1.0.0-alpha · 基础版**，上游固定版本见 upstreams.json；交付位置、验收与未解决问题统一见 [项目交接](D:/Log/swu-campus-assistant/handoff.md)。
+本项目保留 **1.0.0-alpha（基础版）** 与 **1.0.0-beta（含教务版）** 两个分支起点，原 3.x 为整合开发阶段编号。当前版本 **1.0.0-beta · 含教务版**，上游固定版本见 upstreams.json；跨电脑开发与仓库准备入口见 [开发与仓库接手说明](docs/development-handoff.md)。本机详细验收记录由维护者另行保存，不是恢复源码所需的唯一资料。
+
 
 应用 Logo 是“日程 + 运动轨迹”的独立图形，不使用校徽或学校官方标识。源图为 assets/logo-master.png，图标构建入口为 scripts/icons.mjs。
 
-Alpha（1.0.0-alpha）保留查寝与乐跑，Beta（1.0.0-beta）增加教务系统。两版使用同一安装位置和用户数据目录，安装对应分支的安装包可切换版本；业务忙碌时会阻止切换。基础版沿用当前修复后的查寝、乐跑、登录、OCR 与界面，仅移除教务功能。两个分支起点、校验与清理范围统一见项目交接。
+Alpha（1.0.0-alpha）保留查寝与乐跑，Beta（1.0.0-beta）增加教务系统。两版使用同一安装位置和用户数据目录，安装对应分支的安装包可切换版本；业务忙碌时会阻止切换。基础版沿用当前修复后的查寝、乐跑、登录、OCR 与界面，仅移除教务功能。开发恢复与跨电脑交接见 [开发与仓库接手说明](docs/development-handoff.md)；维护者另行保存的本机验收和清理记录不是恢复源码所需的唯一入口。
+
 
 ## 安装与查寝
 
-运行“西大日常-1.0.0-alpha-基础版-安装程序.exe”，然后从桌面或开始菜单打开“西大日常”。支持 Windows 10/11 x64，需要系统 Edge；包内包含 Python 乐跑引擎与代理，无需另装 Python 或 Bun。分发时请发送完整安装程序。
+运行“西大日常-1.0.0-beta-含教务版-安装程序.exe”，然后从桌面或开始菜单打开“西大日常”。支持 Windows 10/11 x64，需要系统 Edge；包内包含 Python 乐跑引擎与代理，无需另装 Python 或 Bun。分发时请发送完整安装程序。
 
 安装使用原查寝版的安装标识和目录 %LOCALAPPDATA%\Programs\SWU-Daka，升级先请求旧后台正常退出。业务忙碌时拒绝退出和升级。原 %APPDATA%\swu-daka-desktop 中的查寝设置、DPAPI 会话、随机计划与历史保留，旧当天标记保守迁移为任务记录，自启动仍指向固定目录。
 
@@ -42,7 +44,48 @@ Alpha（1.0.0-alpha）保留查寝与乐跑，Beta（1.0.0-beta）增加教务�
 
 此功能不等于永久登录：是否接受 SSO、是否要求验证码由学校决定。首次使用需在本版登录窗口勾选并成功登录一次；旧版未保存密码，无法凭旧令牌还原密码。偏好设置“忘记登录信息”删除保存的账号密码和学校 Cookie，保留当前应用令牌；“退出账号”同时删除记住信息并关闭定时。
 
-DPAPI、页面与取消/删除行为已通过本机验证；2026-10-16 已用授权账号完成真实登录、一次查寝签到及独立确认，并验证保存的有效学校 Cookie 可不填写密码或验证码直接完成 SSO 换应用令牌。此结果不代表学校令全部 Cookie 失效后仍能免验证码，也不保证永久可用。
+DPAPI、页面与取消/删除行为已通过本机验证；曾使用授权账号验证登录与一次查寝流程。该历史结果不代表所有 Cookie 失效后仍可免验证码，也不保证后续可用。
+
+## OCS 源码适配与 Pi 助手
+
+### OCS：统一界面，分项移植
+
+OCS 管理位于主 React 同页，Bun 直接持有 Playwright 上下文，提供浏览器资料 CRUD、多 profile 启停/聚焦、按需 PNG 预览、脚本源码管理、MV3 扩展导入、独立 DPAPI 配置与日志；不启动 OCS Desktop.exe / Electron 管理应用，不监听旧 15319 辅助端口。固定官方 OCS Desktop v2.12.0 的完整 162 文件原文位于 vendor/ocs/source，逐文件校验见 source-manifest.json；纳入完整源码不等于所有业务已运行。启动只执行通用新建页面；平台登录须单独确认。
+
+- **配置与定向同步**：从固定 OCSJS 5.2.1 源码适配 23 个非敏感标量字段，保留未知键与私有占位值，不自动写入未编辑默认值。全局同步开关与脚本 UUID、源码 SHA-256 的独立授权同时生效，下一次启动前仅向该脚本的隔离 GM 存储同步支持字段及私有 answererWrappers。改授权或设置须先停止持有的浏览器；撤权恢复覆盖前数据并移除注入键，但无法收回脚本已经读到的秘密。私有包装配置不进入公开状态或高级 JSON 回显。保存/同步不是播放器控制、搜题或课程执行。
+- **脚本执行子集**：隔离世界支持 15 项显式 grants：基础信息、存储、值监听、Tab 与样式共 11 项；`GM_xmlhttpRequest` / `GM.xmlHttpRequest` 两个网络别名；`GM_getResourceText` / `GM_getResourceURL` 两项资源 API。网络仅允许脚本逐项声明的精确公开 `@connect` 主机和 HTTPS 有界请求，不携带 OCS 浏览器 Cookie；资源以同步方式读取固定内置 OCS CSS 或有界 UTF-8 `data:` 文本资源，不进行网络/文件读取。`@require`、`unsafeWindow`、`GM_notification`、本机 connect 和完整 OCSJS 仍不支持；依赖未适配能力的脚本仍不能运行。forceUpdateScripts 仍只保存偏好。
+- **单次登录子集**：超星手机密码、智慧职教账号密码已有独立确认命令和 UI；保存或启动绝不触发登录，每次确认至多点击一次，不自动勾协议、重试密码或代答验证码。固定 HTTPS 页面、原生表单及有效提交目标受校验；其余四项平台定义明确禁用。结果始终为未验证身份、需本人核对，真实平台兼容性与账号登录尚未验收。
+- **安全与实际边界**：不读取旧 Electron 密文或校园凭据，不改系统代理；下载校验 HTTPS 重定向及固定连接地址，文件/输出拒绝链接越界。正常关闭需要真实关闭/断连确认，GM 写入与浏览器生命周期分开结算。浏览器自发退出根因仍未知，不把短时未复现写成已修复。完整 GM、其他平台登录、OCS 图片/滑块 OCR、实时视频及课程执行/完成结果仍未完成；PNG 不是视频，配置保存和浏览器运行均不代表课程成功。本机预览已同步最新已验收的 Models 文案修正快照；预览副本尚未启动、既有预览数据未访问，范围见交接。
+
+### Pi：默认诊断，显式受控 OCS 联动
+
+「Pi 助手」使用官方 @earendil-works/pi-agent-core 与 @earendil-works/pi-ai 1.3.0，经宿主、/api/pi 与 window.pi 接入；不安装独立 coding-agent CLI，不加载其凭据。默认 diagnose 模式工具列表为空，只能基于本人提供的脱敏文本作答。本人显式启用 `ocsToolsEnabled`，且所选 provider 明确声明 `tools=true` 时，才开放官方两项受控工具：最小 OCS 概览，以及对已保存浏览器申请启动、停止或聚焦。每项动作都需宿主生成的一次性 `approvalId` 单独审批；目标资料或配置 revision 变化、会话停止/取消会使审批失效。toolCallId 只用于诊断展示，不是批准凭据。
+
+发送前分别由本人确认对话可发给所选服务商并可能计费；OCS 模式还需独立确认最小工具结果可继续发送给服务商，此确认不批准任何浏览器动作。每个提示词宿主最多允许 3 次 AgentTool 调用，并且经确认后最多允许一次基于工具结果的 SDK 续发；这不是固定的 provider HTTP 请求次数保证。工具只返回浏览器 ID/阶段与 capability ID/可用性，不向模型提供资料标题、URL、路径、设置、日志、截图或凭据。Pi 不提供登录、导航、JS、文件、shell、课程或学校提交工具；会话不持久化。
+
+模型配置优先推荐本人申请的 DeepSeek 等国产 API，**但不限厂商或地区**；五协议配置保留，原生会话以实际适配范围为准，当前 Gemini 明确拒绝启动。Key 与自定义请求头仍用 Windows CurrentUser DPAPI 保存，普通状态不回显密钥；配置保存不等于连通，停止请求不保证服务商停止处理或不计费。WorkBuddy 是可选外部协作软件，不是本应用模型协议或已集成远控。W.O.F NAI Studio 仅为早期适配代码参考，不作为本应用 UI 或凭据来源，来源声明仍见 licenses/WOF_NAI_Studio。
+
+使用步骤统一维护在 [DeepSeek 与兼容服务配置](docs/deepseek-pi.md)、[Pi 诊断会话与辅助边界](docs/pi-assistance.md)、[WorkBuddy 外部协作](docs/workbuddy.md)，此处不重复教程。真实请求与 UI/编译后 TLS 是不同验证层次；当前实现边界、未验证项与仓库接手注意事项见 [开发与仓库接手说明](docs/development-handoff.md)。维护者可另存更详尽的本机验收记录，但它不是跨电脑接手的必需依赖。
+
+
+### 构建与交付边界
+
+源码核验使用 `bun scripts/prepare-ocs-source.ts`；build.ts 还核验固定 OCSJS 源码。显式提供 SWU_OCS_BROWSER_DIST（完整 Chrome 目录）、SWU_ENGINE_DIST（OCR 引擎）与隔离 SWU_BUILD_OUTPUT；按当前脚本打包浏览器、源码及 OCSJS 来源/许可清单，不拷贝旧 OCS Desktop.exe / Electron，也不运行旧 prepare-ocs.ts 补丁流程。SWU_OCS_DIST 只保留读取旧 Chrome 目录的兼容入口，直接开发运行可用 SWU_OCS_BROWSER 指定独立 chrome.exe。
+
+**Pi→OCS 技术接线已完成，但真实模型→工具闭环仍未验证；项目仍为 TEST_ONLY / RELEASE_BLOCKED，完整 OCS 目标未完成。** 最新 Models 文案快照已按单独授权完成本机 LOCAL_ONLY 安装，安装后未启动应用、未读取账号数据，因此不代表安装账号环境运行验收。全界面中文化及学校平台业务仍未验收。正式发布仍受 `proxy-agent-negotiate@1.1.0` 适用许可全文缺失阻塞。安装状态、历史验收边界与未完成项见 [开发与仓库接手说明](docs/development-handoff.md)。
+
+
+
+
+## 校园服务（本机教务）
+
+侧栏“校园服务”提供课表、成绩、考试三个只读页面，按学校返回的学期查询，可搜索课程、教师或地点，并显示来源与读取时间。界面参考本机 Snow App 0.4.27 的中性色、紧凑控件和圆角层次，保留西大日常独立图标。
+
+先在“今日任务”登录本人账号，再点击“连接教务”。应用用隔离的 Edge 窗口尝试复用同账号已保存的学校 Cookie；尚无教务会话时，正常进入学校门户，通过学校客户端的签名接口查询唯一的“教务系统”入口，再继续学校 SSO。门户已登录不等于教务学号已核验，不把查寝令牌当成教务会话。学校会话失效时，应用复用现有统一认证和随包 ddddocr，以本机保存的同账号密码自动登录一次，再将学校会话交给教务 SSO。教务学号核验一致后才保存更新的加密 Cookie 并允许查询。每次连接最多自动提交一次；识别失败或学校拒绝时明确报错，可在学校窗口完成登录后重新检测，或断开后重新连接。未保存密码时仍使用官方窗口手动登录。该操作不执行查寝或乐跑提交。 页面加载完成及每次数据查询前随机等待 1–3 秒，再继续下一步。
+
+数据在本机直接从 jw.swu.edu.cn 读取，不部署压缩包的服务器、数据库、网关或智能体。不会更改系统代理、关闭 TLS 校验或提交选课/成绩/考试变更。学校网络或权限限制会明确报错。账号不一致时清除连接和本次结果；退出账号、断开或退出应用时关闭专用窗口，结果不写入磁盘。查询失败保留上次结果和读取时间，不能当作实时数据。
+
+课程周次、节次和考试时间保留学校原文；不猜测节次对应的钟点、不计算未经学校确认的绩点。成绩展示官方总评与备注，空结果与“尚未查询”分别提示。字段映射与只读接口参考用户提供的 com two.zip 中 easy-swu-backend 的 timetable、grades、exams 服务；门户入口请求采用学校公开客户端的签名格式与动态客户端凭据，仅使用已登录会话，不内置或输出用户凭据。未复制其认证代答与服务端基础设施。
 
 ## 乐跑
 
@@ -66,7 +109,7 @@ DPAPI、页面与取消/删除行为已通过本机验证；2026-10-16 已用授
 
 采集会临时修改当前用户系统代理。只停止本应用持有的代理进程，并等待确认退出后释放引用，监听限定本机；端口占用明确失败，不结束其他代理。停止进程和恢复网络分别尝试，失败明确上报；仍存活的本应用监听或未恢复备份都会阻止新操作，恢复后重新核对普通字段和原生连接配置。默认不退出微信、不清理微信登录态。若其他程序在运行中修改代理，本版报告恢复冲突并保留备份，不覆盖他人的新设置。
 
-查寝和乐跑动作互斥；乐跑期间查寝调度等待，结束后继续检查原计划，不重新抽取时间。乐跑未新增无人值守定时，不会随查寝定时自动执行。结果沿用上游的成功、待复核、无效、缺少会话等状态；未终判不显示成功。2026-10-17 已完成一条真实乐跑提交和平台有效性回查；该次结果不保证后续所有记录均获认可。
+查寝和乐跑动作互斥；乐跑期间查寝调度等待，结束后继续检查原计划，不重新抽取时间。乐跑未新增无人值守定时，不会随查寝定时自动执行。结果沿用上游的成功、待复核、无效、缺少会话等状态；未终判不显示成功。历史本机记录曾完成一次乐跑提交及平台回查；该结果不保证后续记录均获认可。
 
 ## 数据
 
@@ -84,29 +127,25 @@ DPAPI、页面与取消/删除行为已通过本机验证；2026-10-16 已用授
 
 ## 开发
 
-desktop/ 为 Bun + React 界面和服务；engine/bridge.py 为 JSON-lines 适配器；vendor/lepao3/ 保留原声明的上游实现。引擎首次进入乐跑页才启动。Node 和 Python 依赖分别由 bun.lock、requirements.lock 锁定，项目环境在 D:\Code\swu-campus-assistant。
+桌面宿主与 React 界面位于 `desktop/`，Python 引擎桥接位于 `engine/bridge.py`；上游来源见 `upstreams.json`。跨电脑环境恢复、变量用途、测试边界和仓库上传前检查见 [开发与仓库接手说明](docs/development-handoff.md)。
+
+Python 3.12.8 可用于复原当前观测到的本机开发环境；随包运行时版本差异及重建要求见接手说明。
 
 ```powershell
-uv pip sync requirements.lock --python D:/Code/swu-campus-assistant/python/Scripts/python.exe
 bun install --frozen-lockfile
-$env:SWU_PYTHON = 'D:/Code/swu-campus-assistant/python/Scripts/python.exe'
-$env:SWU_ENGINE_DIST = 'D:/Code/swu-campus-assistant/engine-dist-1.0.0-beta/lepao-engine'
-$env:SWU_ENGINE_BUILD = 'D:/Code/swu-campus-assistant/engine-build-1.0.0-beta'
-$env:SWU_BUILD_OUTPUT = 'D:/Coding/swu-campus-assistant/1.0.0-beta'
-$env:SWU_TEST_EXE = "$env:SWU_BUILD_OUTPUT/打卡助手.exe"
-# Set SWU_INNO_COMPILER to the verified local ISCC.exe path.
-bun run build:engine
-bun run typecheck
-$env:SWU_LEPAO_ENGINE = "$env:SWU_ENGINE_DIST/lepao-engine.exe"
-bun run test
-& $env:SWU_PYTHON tests/privacy-smoke.py
-& $env:SWU_PYTHON tests/proxy-smoke.py
-& $env:SWU_PYTHON tests/lepao-flow-smoke.py
-bun run build
-bun run test:desktop
-bun run build:installer
+uv venv .venv --python 3.12.8
+uv pip sync requirements.lock --python .venv/Scripts/python.exe
 ```
 
-主程序构建要求完整引擎，收集 npm/Python 许可证，生成程序与引擎全部文件的 SHA-256 清单，安装包编译前复核。SWU_USER_DATA_DIR 隔离测试数据；SWU_LEPAO_ENGINE 可覆盖开发用引擎路径。默认测试不提交学校签到/乐跑，不安装证书或修改系统代理。旧可选真实失效会话测试仅在显式提供 SWU_TEST_SESSION_SOURCE 时运行。
+从仓库根目录运行明确列出的检查：
 
-上游声明检查：用项目 Python 执行 vendor/lepao3/tools/apply_headers.py --check。许可证使用上游原 Git blob 字节，避免 CRLF 转换误报。乐跑轨迹与提交算法沿用上游，本版不保证平台认可结果。H5 登录、CLI 批处理与 Tk 界面没有作为独立入口开放，界面接入的是成员、环境、会话采集、干跑和完整执行。
+```powershell
+bun run typecheck
+bun run test
+bun test ./tests/ocs-integration.test.ts
+```
+
+不要运行裸 `bun test`，以免自动发现需单独授权的真实会话/浏览器等集成测试。`bun run test` 是 `package.json` 中声明的有限核心测试；桌面套件需要隔离编译件和测试数据，外部 Chrome/引擎构建资源与可选真实集成的边界见接手说明。
+
+构建引擎或主程序还需每台机器独立核实的 Python、固定 Chrome 和引擎构建资源，并为各环境变量指定本机专属隔离目录。不要沿用其他电脑的绝对路径，也不要让构建输出指向源码、`work/`、预览或正式安装目录。`proxy-agent-negotiate@1.1.0` 适用许可全文仍缺失，正式发布保持阻塞；源码交接和本机测试通过都不代表公开分发许可已解决。
+
