@@ -11,6 +11,10 @@ import { attachUserScripts, type UserScriptController } from '../ocs/userscripts
 import { ocsLifecycleMessage, type OcsLifecycleSource } from './ocs-lifecycle';
 import type { OcsDocument, SavedBrowser } from './ocs-document';
 import type { OcsBrowser, OcsState } from '../shared/ocs';
+import type { TsinghuaState } from '../shared/ocs-tsinghua';
+import { tsinghuaExternalScript } from '../shared/ocs-external';
+import { adaptTsinghuaScript } from '../ocs/tsinghua-script';
+import { createTsinghuaController, type TsinghuaController } from './ocs-tsinghua';
 
 export type BrowserReporter = (id: string, level: 'info' | 'warning' | 'error', event: string, message: string) => void;
 const extensionManifestSchema = z.object({ manifest_version: z.literal(3) });
@@ -19,6 +23,7 @@ interface OwnedContext {
   ownerSequence: number; attachedAt: number; contextCloseObserved: boolean; browserDisconnectObserved: boolean;
   controller: UserScriptController | null; attachment: Promise<void> | null; attachmentSettled: boolean; attachmentError: Error | null;
   disposal: Promise<void> | null; scriptErrors: Error[]; deliveredScriptErrors: number; stopping: boolean; stopTask: Promise<void> | null;
+  tsinghua: TsinghuaController | null; tsinghuaDisposal: Promise<void> | null; tsinghuaSettled: boolean;
 }
 
 /** Bound a caller's wait without assuming that browser or GM work was cancelled. */
@@ -58,7 +63,27 @@ export function createOcsBrowserRuntime(root: string, executable: string, report
     }));
   }
   function scriptsSettled(owned: OwnedContext): boolean {
-    return owned.attachmentSettled && (owned.controller === null || owned.controller.isSettled());
+    return owned.attachmentSettled && (owned.controller === null || owned.controller.isSettled()) && owned.tsinghuaSettled;
+  }
+  function currentTsinghua(id: string): TsinghuaController {
+    current(id);
+    const controller = contexts.get(id)?.tsinghua;
+    if (!controller) throw new DOMException('所选浏览器的清华社控制器尚未就绪。', 'InvalidStateError');
+    return controller;
+  }
+  function disposeTsinghua(id: string, owned: OwnedContext): Promise<void> {
+    if (owned.tsinghuaDisposal) return owned.tsinghuaDisposal;
+    if (!owned.tsinghua) return Promise.resolve();
+    owned.tsinghuaDisposal = owned.tsinghua.close().then(() => {
+      owned.tsinghuaSettled = true;
+      releaseSettledOwner(id, owned);
+    }, cause => {
+      owned.scriptErrors.push(new Error('清华社运行收尾失败；受控 Chrome 仍继续正常关闭。', { cause }));
+      owned.tsinghuaSettled = owned.tsinghua?.isSettled() ?? false;
+      report(id, 'error', 'tsinghua.dispose.failed', JSON.stringify({ settled: owned.tsinghuaSettled, ownerSequence: owned.ownerSequence }));
+      releaseSettledOwner(id, owned);
+    });
+    return owned.tsinghuaDisposal;
   }
   function releaseSettledOwner(id: string, owned: OwnedContext): void {
     if (contexts.get(id) !== owned || !owned.confirmed || owned.stopping || !scriptsSettled(owned)) return;
@@ -105,6 +130,7 @@ export function createOcsBrowserRuntime(root: string, executable: string, report
         version: 1, source, requested: owned.attempted, previousPhase, observedAt: new Date().toISOString()
       }));
     }
+    void disposeTsinghua(id, owned);
     void disposeScripts(id, owned);
     releaseSettledOwner(id, owned);
   }
@@ -114,7 +140,8 @@ export function createOcsBrowserRuntime(root: string, executable: string, report
       context, browser: context.browser(), confirmed: false, attempted: false,
       ownerSequence, attachedAt: performance.now(), contextCloseObserved: false, browserDisconnectObserved: false,
       controller: null, attachment: null, attachmentSettled: false, attachmentError: null,
-      disposal: null, scriptErrors: [], deliveredScriptErrors: 0, stopping: false, stopTask: null
+      disposal: null, scriptErrors: [], deliveredScriptErrors: 0, stopping: false, stopTask: null,
+      tsinghua: null, tsinghuaDisposal: null, tsinghuaSettled: true
     };
     contexts.set(id, owned);
     context.once('close', () => release(id, owned, 'context.close'));
@@ -134,6 +161,7 @@ export function createOcsBrowserRuntime(root: string, executable: string, report
     };
     if (owned.attachment) await attempt(owned.attachment, 'OCS 用户脚本注册');
     if (owned.attachmentError) errors.push(owned.attachmentError);
+    await attempt(disposeTsinghua(id, owned), '清华社运行收尾');
     await attempt(disposeScripts(id, owned), 'OCS 用户脚本收尾');
     // GM failures must not skip the independent native close/confirmation path.
     if (closeContext && !owned.confirmed) {
@@ -183,6 +211,19 @@ export function createOcsBrowserRuntime(root: string, executable: string, report
     hasContext: (id: string): boolean => contexts.has(id),
     browserState: (browser: SavedBrowser): OcsBrowser => ({ ...browser, ...(phases.get(browser.id) ?? { phase: 'stopped' as const, pid: null, lastError: null }), owned: contexts.has(browser.id) }),
     preview: (): OcsState['preview'] => preview ? { ...preview } : null,
+    tsinghuaStates: (): TsinghuaState[] => [...contexts.values()].flatMap(owned => owned.tsinghua ? [owned.tsinghua.snapshot()] : []),
+    tsinghuaResumeUrl: (id: string): string | null => contexts.get(id)?.tsinghua?.resumeUrl() ?? null,
+    openTsinghua: (id: string): Promise<void> => currentTsinghua(id).open(),
+    verifyTsinghuaSlider: (id: string): Promise<void> => currentTsinghua(id).verifySlider(),
+    selectTsinghuaCourse: (id: string, courseId: number): Promise<void> => currentTsinghua(id).selectCourse(courseId),
+    startTsinghua: (id: string): Promise<void> => currentTsinghua(id).start(),
+    stopTsinghua(id: string): Promise<void> {
+      const controller = contexts.get(id)?.tsinghua;
+      if (!controller) return Promise.reject(new DOMException('所选浏览器没有可停止的清华社控制器。', 'InvalidStateError'));
+      return controller.stop();
+    },
+    refreshTsinghua: (id: string): Promise<void> => currentTsinghua(id).refresh(),
+    readTsinghuaScore: (id: string): Promise<void> => currentTsinghua(id).readScore(),
     stop,
     async stopAll(): Promise<void> {
       const results = await Promise.allSettled([...new Set([...contexts.keys(), ...terminalScriptErrors.keys()])].map(stop));
@@ -211,6 +252,9 @@ export function createOcsBrowserRuntime(root: string, executable: string, report
       }
       const programs = await Promise.all(document.userScripts.filter(value => value.enabled).map(item => loadScript(root, item)));
       if (programs.some(program => !program.supported)) throw new Error('启用的用户脚本声明了超出已适配 GM 存储子集的权限，无法安全启动。');
+      const tsinghuaInstalled = document.userScripts.some(item => item.digest === tsinghuaExternalScript.digest);
+      const tsinghuaProgram = programs.find(program => program.digest === tsinghuaExternalScript.digest);
+      const tsinghuaAdaptation = tsinghuaProgram ? adaptTsinghuaScript(tsinghuaProgram.content, tsinghuaProgram.digest) : null;
       // Complete private-store reconciliation before launching Chrome or registering any GM runtime.
       for (const item of document.userScripts) {
         const program = programs.find(value => value.id === item.id);
@@ -235,6 +279,13 @@ export function createOcsBrowserRuntime(root: string, executable: string, report
           args: ['--no-first-run', '--no-default-browser-check', '--disable-background-networking', '--disable-component-update', '--disable-sync', '--disable-default-apps', '--disable-features=Translate', ...(extensions.length ? [`--load-extension=${extensions.join(',')}`, `--disable-extensions-except=${extensions.join(',')}`] : [])]
         });
         const owned = own(browser.id, context);
+        owned.tsinghua = createTsinghuaController(browser.id, context, {
+          installed: tsinghuaInstalled, enabled: tsinghuaProgram !== undefined,
+          adapterVersion: tsinghuaAdaptation?.adapterVersion ?? null,
+          sourceDigest: tsinghuaInstalled ? tsinghuaExternalScript.digest : null,
+          executionDigest: tsinghuaAdaptation?.executionDigest ?? null
+        }, report);
+        owned.tsinghuaSettled = false;
         context.setDefaultTimeout(15_000); context.setDefaultNavigationTimeout(30_000);
         const attachPage = (page: Page): void => {
           page.on('pageerror', () => report(browser.id, 'error', 'page.error', '页面脚本发生错误；未记录页面内容或账号参数。'));

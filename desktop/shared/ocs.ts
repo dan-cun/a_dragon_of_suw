@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { Result } from './contracts';
 import { ocsLoginResultSchema } from './ocs-login';
+import { ocsPronunciationStateSchema, ocsPronunciationPrepareSchema, ocsPronunciationSpeakSchema, ocsPronunciationStopSchema } from './ocs-pronunciation';
+import { tsinghuaStateSchema, tsinghuaOpenSchema, tsinghuaSelectSchema, tsinghuaStartSchema, tsinghuaStopSchema, tsinghuaRefreshSchema, tsinghuaScoreSchema, tsinghuaSliderSchema } from './ocs-tsinghua';
 
 const id = z.string().uuid();
 const text = z.string().max(2000);
@@ -25,6 +27,8 @@ export const ocsStateSchema = z.object({
   userScripts: z.array(z.object({ id, name: z.string(), version: z.string(), source: z.string(), enabled: z.boolean(), digest: z.string().regex(/^[a-f0-9]{64}$/), configSyncAuthorized: z.boolean() }).strict()),
   extensions: z.array(z.object({ id, name: z.string(), version: z.string(), enabled: z.boolean() })),
   settings: ocsSettingsSchema,
+  pronunciation: ocsPronunciationStateSchema,
+  tsinghua: z.array(tsinghuaStateSchema).max(100),
   automationRun: z.object({ browserId: id, at: z.string(), result: ocsLoginResultSchema }).strict().nullable(),
   automationCatalog: z.array(z.object({ name: z.string(), fields: z.array(z.object({ key: z.string(), label: z.string(), secret: z.boolean(), initialValue: z.string() })) })),
   logs: z.array(z.object({ sequence: z.number().int(), at: z.string(), browserId: id.nullable(), level: z.enum(['info', 'warning', 'error']), event: z.string(), message: z.string() })),
@@ -35,6 +39,8 @@ export type OcsState = z.infer<typeof ocsStateSchema>;
 export const ocsCommandSchema = z.discriminatedUnion('command', [
   z.object({ command: z.literal('state') }).strict(),
   z.object({ command: z.literal('data') }).strict(),
+  ocsPronunciationPrepareSchema, ocsPronunciationSpeakSchema, ocsPronunciationStopSchema,
+  tsinghuaOpenSchema, tsinghuaSelectSchema, tsinghuaStartSchema, tsinghuaStopSchema, tsinghuaRefreshSchema, tsinghuaScoreSchema, tsinghuaSliderSchema,
   z.object({ command: z.literal('browser-create'), browser: browserMetadataSchema }).strict(),
   z.object({ command: z.literal('browser-update'), id, browser: browserMetadataSchema }).strict(),
   z.object({ command: z.literal('browser-delete'), id }).strict(),
@@ -48,6 +54,7 @@ export const ocsCommandSchema = z.discriminatedUnion('command', [
   z.object({ command: z.literal('automation-run'), id, name: z.string().min(1).max(200), confirmed: z.literal(true) }).strict(),
   z.object({ command: z.literal('script-import'), name: z.string().min(1).max(200), content: z.string().min(1).max(524288) }).strict(),
   z.object({ command: z.literal('script-download'), url: z.url().max(2000) }).strict(),
+  z.object({ command: z.literal('script-install-tsinghua'), confirmed: z.literal(true) }).strict(),
   z.object({ command: z.literal('script-enable'), id, enabled: z.boolean() }).strict(),
   z.object({ command: z.literal('script-delete'), id }).strict(),
   z.object({ command: z.literal('script-config-sync'), id, digest: z.string().regex(/^[a-f0-9]{64}$/), authorized: z.boolean(), confirmed: z.literal(true) }).strict(),

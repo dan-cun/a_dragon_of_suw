@@ -3,6 +3,8 @@ import { parseUserScript, type ScriptProgram } from '../bun/ocs-assets';
 import { parseMatchPattern, matchScriptPattern } from './script-matching';
 import { acceptsScript } from './gm-matching';
 import { attachGmScripts } from './gm-runtime';
+import { tsinghuaExternalScript } from '../shared/ocs-external';
+import { adaptTsinghuaScript } from './tsinghua-script';
 import type { UserScriptController, UserScriptStorageOptions } from './gm-types';
 export type { UserScriptController, UserScriptStorageOptions } from './gm-types';
 
@@ -20,10 +22,12 @@ export async function attachUserScripts(context: BrowserContext, programs: Scrip
   });
   for (const program of verified.filter(program => program.grants.length === 0)) {
     const { content, ...metadata } = program;
+    const adaptation = program.digest === tsinghuaExternalScript.digest ? adaptTsinghuaScript(content, program.digest) : null;
+    const executionContent = adaptation ? adaptation.content : content;
     // Serialize every pure helper dependency; imported source is never passed to eval/Function.
     const prefix = `(() => { const metadata = ${JSON.stringify(metadata)}; const parseMatchPattern = ${parseMatchPattern.toString()}; const matchScriptPattern = ${matchScriptPattern.toString()}; const accepts = ${acceptsScript.toString()}; const notify = outcome => { const binding = Reflect.get(globalThis, '__swuOcsScriptOutcome'); if (typeof binding === 'function') binding(metadata.id, outcome); }; try { if (!accepts(metadata, location.href, parseMatchPattern, matchScriptPattern)) return; } catch { notify('failed'); return; } const execute = () => { try { (() => {\n`;
     const suffix = `\n})(); notify('executed'); } catch { notify('failed'); } }; if (metadata.runAt === 'document-start') execute(); else if (metadata.runAt === 'document-idle') window.addEventListener('load', execute, {once:true}); else window.addEventListener('DOMContentLoaded', execute, {once:true}); })();`;
-    await context.addInitScript({ content: prefix + content + suffix });
+    await context.addInitScript({ content: prefix + executionContent + suffix });
   }
   if (storage && privileged.length) return await attachGmScripts(context, privileged, storage, report);
   let disposed = false;

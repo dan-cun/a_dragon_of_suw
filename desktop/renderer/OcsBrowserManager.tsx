@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Camera, CircleStop, Folder, Focus, MonitorPlay, Pencil, Play, Plus, Search, Trash2, X } from 'lucide-react';
 import type { OcsBrowser, OcsState } from '../shared/ocs';
+import { TSINGHUA_LEGACY_HOME } from '../shared/ocs-tsinghua';
+import { OcsTsinghua } from './OcsTsinghua';
+import { OcsPronunciation } from './OcsPronunciation';
 import { isSupportedOcsLogin, OCS_SUPPORTED_LOGINS, OCS_UNSUPPORTED_LOGINS } from '../shared/ocs-login';
 import { browserPhaseLabels, emptyMetadata, formatTime, metadataFromBrowser } from './OcsTypes';
 import type { AutomationDefinition, BrowserMetadata, ConfirmOcs, ExecuteOcs } from './OcsTypes';
 
 type BrowserManagerProps = { state: OcsState; disabled: boolean; execute: ExecuteOcs; confirm: ConfirmOcs };
-type BrowserEditorProps = { browser: OcsBrowser | null; disabled: boolean; execute: ExecuteOcs; close: () => void };
+type BrowserEditorProps = { browser: OcsBrowser | null; initial: BrowserMetadata; disabled: boolean; execute: ExecuteOcs; close: () => void };
 
-function BrowserEditor({ browser, disabled, execute, close }: BrowserEditorProps) {
-  const [draft, setDraft] = useState<BrowserMetadata>(() => browser ? metadataFromBrowser(browser) : emptyMetadata());
-  const [tags, setTags] = useState(browser?.tags.join(', ') ?? '');
+function BrowserEditor({ browser, initial, disabled, execute, close }: BrowserEditorProps) {
+  const [draft, setDraft] = useState<BrowserMetadata>(initial);
+  const [tags, setTags] = useState(initial.tags.join(', '));
   const [error, setError] = useState('');
   async function save(): Promise<void> {
     const tagList = [...new Set(tags.split(/[,，\n]/).map(value => value.trim()).filter(Boolean))];
@@ -83,16 +86,17 @@ export function BrowserManager({ state, disabled, execute, confirm }: BrowserMan
   const [search, setSearch] = useState('');
   const [folder, setFolder] = useState('');
   const [selectedId, setSelectedId] = useState('');
-  const [editor, setEditor] = useState<{ browser: OcsBrowser | null } | null>(null);
+  const [editor, setEditor] = useState<{ browser: OcsBrowser | null; initial: BrowserMetadata } | null>(null);
   const selected = state.browsers.find(browser => browser.id === selectedId);
   const query = search.trim().toLocaleLowerCase();
   const folders = [...new Set(state.browsers.map(browser => browser.folder).filter(Boolean))].sort();
   const browsers = state.browsers.filter(browser => (!folder || browser.folder === folder) && [browser.name, browser.folder, browser.notes, ...browser.tags].some(value => value.toLocaleLowerCase().includes(query)));
   const preview = state.preview?.browserId === selected?.id ? state.preview : null;
   return <div className="ocs-stack" data-testid="ocs-browsers">
-    <div className="ocs-toolbar"><div><h2>浏览器资料库</h2><p>独立资料 · 文件夹与标签 · 官方自动化</p></div><button className="button primary" type="button" data-testid="ocs-browser-new" disabled={disabled} onClick={() => setEditor({ browser: null })}><Plus size={16} />新建浏览器</button></div>
+    <div className="ocs-toolbar"><div><h2>浏览器资料库</h2><p>独立资料 · 文件夹与标签 · 官方自动化</p></div><button className="button primary" type="button" data-testid="ocs-browser-new" disabled={disabled} onClick={() => setEditor({ browser: null, initial: emptyMetadata() })}><Plus size={16} />新建浏览器</button></div>
+    <section className="ocs-box" data-testid="ocs-tsinghua-entry"><div className="ocs-section-heading"><h3>清华社英语在线</h3><button className="button secondary" type="button" data-testid="ocs-tsinghua-browser-new" disabled={disabled} onClick={() => setEditor({ browser: null, initial: { ...emptyMetadata(), name: '清华社英语在线', startUrl: TSINGHUA_LEGACY_HOME, tags: ['清华社'] } })}><Plus size={16} />预填清华社浏览器</button></div><p className="ocs-help">仅预填新资料，需在下方明确点击「创建浏览器」，不会启动或更改旧资料。脚本需到「用户脚本」单独安装并启用；真实兼容性与课程结果未验证。</p></section>
     <div className="ocs-filters"><label className="ocs-search"><Search size={16} /><input data-testid="ocs-browser-search" aria-label="搜索浏览器" type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索名称、标签或备注" /></label><select data-testid="ocs-browser-folder-filter" aria-label="按文件夹筛选" value={folder} onChange={event => setFolder(event.target.value)}><option value="">全部文件夹</option>{folders.map(item => <option key={item} value={item}>{item}</option>)}</select><span className="ocs-muted">{browsers.length} / {state.browsers.length} 个</span></div>
-    {editor && <BrowserEditor key={editor.browser?.id ?? 'new'} browser={editor.browser} disabled={disabled || state.browsers.some(browser => browser.id === editor.browser?.id && browser.owned)} execute={execute} close={() => setEditor(null)} />}
+    {editor && <BrowserEditor key={editor.browser?.id ?? editor.initial.startUrl} browser={editor.browser} initial={editor.initial} disabled={disabled || state.browsers.some(browser => browser.id === editor.browser?.id && browser.owned)} execute={execute} close={() => setEditor(null)} />}
     <div className="ocs-browser-grid">
       {browsers.map(browser => <article className={`ocs-browser-card ${selectedId === browser.id ? 'selected' : ''}`} key={browser.id} data-testid={`ocs-browser-row-${browser.id}`}>
         <button className="ocs-browser-select" type="button" data-testid={`ocs-browser-select-${browser.id}`} aria-pressed={selectedId === browser.id} onClick={() => setSelectedId(browser.id)}><MonitorPlay size={21} /><strong>{browser.name}</strong><span className={`ocs-phase ${browser.phase}`} data-testid={`ocs-browser-phase-${browser.id}`}>{browserPhaseLabels[browser.phase]}</span></button>
@@ -104,7 +108,7 @@ export function BrowserManager({ state, disabled, execute, confirm }: BrowserMan
           <button type="button" className="button secondary" data-testid={`ocs-browser-start-${browser.id}`} title={state.phase === 'unavailable' ? state.message : browser.owned ? '此实例仍由后台持有，请先停止' : '启动受控浏览器'} disabled={disabled || browser.owned || state.phase !== 'ready' || !['stopped', 'failed'].includes(browser.phase)} onClick={() => void execute({ command: 'browser-start', id: browser.id })}><Play size={14} />启动</button>
           <button type="button" className="button secondary" data-testid={`ocs-browser-stop-${browser.id}`} disabled={disabled || !browser.owned} onClick={() => void execute({ command: 'browser-stop', id: browser.id })}><CircleStop size={14} />{browser.phase === 'failed' ? '重试停止' : '停止'}</button>
           <button type="button" className="ocs-icon-button" aria-label={`聚焦 ${browser.name}`} title="聚焦受控浏览器" data-testid={`ocs-browser-focus-${browser.id}`} disabled={disabled || !browser.owned || browser.phase !== 'running'} onClick={() => void execute({ command: 'browser-focus', id: browser.id })}><Focus size={16} /></button>
-          <button type="button" className="ocs-icon-button" aria-label={`编辑 ${browser.name}`} title="编辑资料" data-testid={`ocs-browser-edit-${browser.id}`} disabled={disabled || browser.owned} onClick={() => setEditor({ browser })}><Pencil size={16} /></button>
+          <button type="button" className="ocs-icon-button" aria-label={`编辑 ${browser.name}`} title="编辑资料" data-testid={`ocs-browser-edit-${browser.id}`} disabled={disabled || browser.owned} onClick={() => setEditor({ browser, initial: metadataFromBrowser(browser) })}><Pencil size={16} /></button>
           <button type="button" className="ocs-icon-button ocs-danger-text" aria-label={`删除 ${browser.name}`} title="删除浏览器及其独立资料" data-testid={`ocs-browser-delete-${browser.id}`} disabled={disabled || browser.owned} onClick={() => confirm({ title: `删除浏览器「${browser.name}」？`, description: '将永久删除此浏览器的管理记录、独立 profile（包含该受控浏览器的登录资料及本地数据）和全部私有自动化配置参数（含密码）。旧 OCS 数据不受影响。请先停止浏览器；删除后无法从本页恢复。', command: { command: 'browser-delete', id: browser.id } })}><Trash2 size={16} /></button>
         </div>
       </article>)}
@@ -112,7 +116,9 @@ export function BrowserManager({ state, disabled, execute, confirm }: BrowserMan
     {browsers.length === 0 && <div className="ocs-empty" data-testid="ocs-browser-empty"><MonitorPlay size={30} /><h3>{state.browsers.length ? '没有匹配的浏览器' : '创建第一个隔离浏览器'}</h3><p>{state.browsers.length ? '请修改搜索词或文件夹筛选。' : '先导入所需的 MV3 扩展和用户脚本，再按需启动浏览器；创建记录不会执行课程。'}</p></div>}
     {selected && <>
       <section className="ocs-box" data-testid="ocs-browser-detail"><div className="ocs-section-heading"><div><h3>{selected.name}</h3><p className="ocs-help">{selected.startUrl}</p></div><button type="button" className="button secondary" data-testid="ocs-browser-preview" disabled={disabled || selected.phase !== 'running'} onClick={() => void execute({ command: 'browser-preview', id: selected.id })}><Camera size={16} />获取截图</button></div><p className="ocs-help">创建于 {formatTime(selected.createdAt)}。截图仅在主动获取时更新，不是实时视频，也不代表课程状态。</p>{preview ? <figure className="ocs-preview" data-testid="ocs-browser-preview-result"><img src={preview.image} alt={`${selected.name} 的单次浏览器截图`} /><figcaption data-testid="ocs-browser-preview-time">截图时间：{formatTime(preview.at)} · 单次静态预览</figcaption></figure> : <p className="ocs-empty ocs-compact-empty" data-testid="ocs-browser-preview-empty">尚未获取此浏览器截图</p>}</section>
+      <OcsTsinghua key={`tsinghua-${selected.id}`} state={state} browser={selected} disabled={disabled} execute={execute} confirm={confirm} />
       <AutomationForm key={selected.id} browser={selected} catalog={state.automationCatalog} run={state.automationRun?.browserId === selected.id ? state.automationRun : null} disabled={disabled} execute={execute} confirm={confirm} />
     </>}
+    {!selected && <OcsPronunciation state={state.pronunciation} disabled={disabled} execute={execute} source={null} />}
   </div>;
 }

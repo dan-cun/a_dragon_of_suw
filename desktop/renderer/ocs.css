@@ -83,6 +83,11 @@
 .ocs-page .ocs-setting-option strong { font-size:13px; }
 .ocs-page .ocs-setting-option small { font-size:12px; color:var(--text-muted); line-height:1.8; }
 .ocs-page .ocs-json-label textarea { font-family:Consolas,monospace; tab-size:2; }
+.ocs-page .ocs-tsinghua-course { display:grid; gap:7px; color:var(--text-secondary); font-size:12px; }
+.ocs-page .ocs-tsinghua-text { white-space:pre-wrap; }
+.ocs-page .ocs-tsinghua-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-top:14px; }
+.ocs-page .ocs-tsinghua-metrics dt { color:var(--text-muted); font-size:12px; }
+.ocs-page .ocs-tsinghua-metrics dd { margin:6px 0 0; color:var(--text); font-size:13px; overflow-wrap:anywhere; }
 .ocs-page .ocs-config-form { border-top:1px solid var(--border); padding-top:20px; }
 .ocs-page .ocs-config-groups { display:grid; gap:12px; min-width:0; }
 .ocs-page .ocs-config-group,.ocs-page .ocs-config-advanced { border:1px solid var(--border); border-radius:9px; min-width:0; padding:13px; }

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Code, Download, FolderInput, Puzzle, Trash2, Upload } from 'lucide-react';
 import type { OcsState } from '../shared/ocs';
+import { tsinghuaExternalScript } from '../shared/ocs-external';
 import type { ConfirmOcs, ExecuteOcs } from './OcsTypes';
 
 type ResourceProps = { state: OcsState; disabled: boolean; execute: ExecuteOcs; confirm: ConfirmOcs; section: 'scripts' | 'extensions' };
@@ -23,6 +24,46 @@ function ResourceToggle({ enabled, disabled, testId, label, save }: ResourceTogg
   }
 
   return <label className="ocs-toggle" aria-busy={pendingChecked !== null}><input type="checkbox" data-testid={testId} checked={pendingChecked ?? enabled} disabled={disabled || pendingChecked !== null} onChange={event => void update(event.currentTarget.checked)} />{label}</label>;
+}
+
+function TsinghuaScriptCard({ state, disabled, execute }: { state: OcsState; disabled: boolean; execute: ExecuteOcs }) {
+  const [confirming, setConfirming] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const submitting = useRef(false);
+  const imported = state.userScripts.some(script => script.digest === tsinghuaExternalScript.digest);
+  const owned = state.browsers.some(browser => browser.owned);
+  const blocked = disabled || owned || imported || installing;
+
+  async function install(): Promise<void> {
+    if (blocked || submitting.current) return;
+    submitting.current = true;
+    setInstalling(true);
+    setFailed(false);
+    try {
+      const installed = await execute({ command: 'script-install-tsinghua', confirmed: true });
+      if (installed) setConfirming(false);
+      else setFailed(true);
+    } finally {
+      submitting.current = false;
+      setInstalling(false);
+    }
+  }
+
+  return <section className="ocs-box" data-testid="ocs-tsinghua-script-card">
+    <div className="ocs-section-heading"><h3>清华社外部脚本 · {tsinghuaExternalScript.version}</h3><span className="ocs-count">{tsinghuaExternalScript.license}</span></div>
+    <p className="ocs-help">第三方 {tsinghuaExternalScript.name}，不是 OCS 官方脚本。固定源码安装后默认禁用，请审阅风险后在下方列表自行启用；不自动启动浏览器，也不授予宿主私有配置。完整题型兼容性与整课完成仍未验证。</p>
+    <p className="ocs-help" role="status" data-testid="ocs-tsinghua-script-status">{imported ? '已导入此固定源码（SHA-256 匹配），启用状态见下方列表。' : '尚未导入此固定源码；同名或其他版本不视为已安装。'}{owned ? ' 请先停止全部受控浏览器，再安装或修改脚本。' : ''}</p>
+    <details className="ocs-config-advanced" data-testid="ocs-tsinghua-script-details"><summary data-testid="ocs-tsinghua-script-details-toggle">使用前必读：自动任务、凭据与语音题风险</summary>
+      <p className="ocs-help">启用后进入匹配页面可能恢复脚本上次的自动任务，可能修改学习记录、提交答案并影响成绩；不保证正确率或课程完成。安装、启用和打开网页不是课程成功证据。</p>
+      <p className="ocs-help">脚本设置中的 AI Key / GitHub Token 为页面明文，可能被页面或其他脚本读取。不要填写宿主 API 密钥或复用重要凭据；第三方脚本失效上报默认关闭，安装不授权上报，请保持关闭。</p>
+      <p className="ocs-help" data-testid="ocs-tsinghua-speech-risk">固定上游旧引擎存在自动点击录音、停止及提交的分支，不能理解为一律跳过语音题。请使用「浏览器」页的受控课程任务核对当前适配状态，遇口语由本人录音；本机朗读也位于该页，仅供练习，不能作为平台录音或评分。此前普通题与翻页的局部通过不代表音视频、口语评分或整课已验证。</p>
+      <code className="ocs-path" data-testid="ocs-tsinghua-script-revision">固定 revision：{tsinghuaExternalScript.revision}</code><code className="ocs-path" data-testid="ocs-tsinghua-script-digest">SHA-256：{tsinghuaExternalScript.digest}</code>
+      <a className="ocs-path" data-testid="ocs-tsinghua-script-source" href={tsinghuaExternalScript.url} target="_blank" rel="noreferrer">查看固定版本源码</a>
+    </details>
+    <div className="ocs-actions"><button type="button" className="button secondary" data-testid="ocs-tsinghua-script-install" disabled={blocked} onClick={() => { setFailed(false); setConfirming(true); }}><Download size={16} />{imported ? '此固定版本已导入' : '安装外部脚本…'}</button><a data-testid="ocs-tsinghua-script-project" href={tsinghuaExternalScript.projectUrl} target="_blank" rel="noreferrer">上游项目 · GPL-3.0-only</a></div>
+    {confirming && <div className="ocs-dialog-backdrop"><section className="ocs-dialog" role="alertdialog" aria-modal="true" aria-labelledby="ocs-tsinghua-confirm-title" aria-describedby="ocs-tsinghua-confirm-description" data-testid="ocs-tsinghua-confirm-dialog"><h2 id="ocs-tsinghua-confirm-title">安装清华社第三方脚本？</h2><p id="ocs-tsinghua-confirm-description">仅下载并校验固定 {tsinghuaExternalScript.version} 源码，安装后默认禁用，不启动浏览器、不操作课程。之后自行启用时，脚本可能恢复上次自动任务、提交答案并影响成绩；AI Key / GitHub Token 是页面明文，不要填写宿主 API 密钥；第三方脚本失效上报默认关闭，应保持关闭。固定上游旧引擎有自动录音与提交分支，不能认为它总会跳过口语；请使用浏览器页受控任务核对适配状态，由本人录音。旧版普通题和翻页仅有局部通过记录，音视频、口语评分与整课尚未验证。</p><code className="ocs-path">SHA-256：{tsinghuaExternalScript.digest}</code>{failed && <p className="ocs-error" role="alert" data-testid="ocs-tsinghua-install-error">安装未确认成功。请取消对话框，查看页面顶部的具体错误并刷新状态后再决定是否重试。</p>}<div className="ocs-actions"><button type="button" autoFocus className="button secondary" data-testid="ocs-tsinghua-confirm-cancel" disabled={installing} onClick={() => setConfirming(false)}>取消</button><button type="button" className="button primary" data-testid="ocs-tsinghua-confirm-install" disabled={blocked || failed} onClick={() => void install()}>{installing ? '正在安装…' : '确认安装，保持禁用'}</button></div></section></div>}
+  </section>;
 }
 
 export function Resources({ state, disabled, execute, confirm, section }: ResourceProps) {
@@ -71,6 +112,7 @@ export function Resources({ state, disabled, execute, confirm, section }: Resour
   }
 
   return <div className="ocs-stack" data-testid="ocs-resources">
+    {section === 'scripts' && <TsinghuaScriptCard state={state} disabled={locked} execute={execute} />}
     <section className="ocs-box" hidden={section !== 'scripts'}><div className="ocs-section-heading"><div className="ocs-inline-heading"><Code size={20} /><h2>用户脚本</h2></div><span className="ocs-count">{state.userScripts.length} 个</span></div>
       <p className="ocs-help">启用后按匹配页面范围执行已审阅的本地源码，不通过脚本管理器安装。支持 grant-none，以及隔离世界内信息、持久存储、值监听、Tab 数据和样式共 11 项基础 GM 子集；另有两种显式网络声明及 GM_getResourceText、GM_getResourceURL。GM 写入需等待持久化；网络仅访问 @connect 指定的公共 HTTPS 域名，不携带浏览器 Cookie，资源仅限固定内置 CSS 或有界文本 data URL。unsafeWindow、GM_notification、@require 和本机连接仍不支持，不代表完整 OCSJS 或课程执行。</p>
       <p className="ocs-help" data-testid="ocs-script-sync-scope">私有配置同步需要总开关开启、脚本启用及逐脚本精确摘要授权，缺一不可；仅在下次启动前将 23 个 flat scalar 字段和 common.settings.answererWrappers 写入该版本的隔离 GM。题库包装配置可能含凭据，脚本可自行披露，已披露的秘密无法召回；更换源码后须重新审阅和授权。</p>
